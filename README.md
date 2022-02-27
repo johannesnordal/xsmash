@@ -1,6 +1,6 @@
 # Requirements
 
-+ [GCC](https://gcc.gnu.org/)
++ [GCC](https://gcc.gnu.org/) >= 4.8.5
 + [Zlib](https://zlib.net/)
 
 # Installation
