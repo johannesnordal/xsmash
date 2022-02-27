@@ -5,7 +5,7 @@ BIN=bin
 SRC=src
 LB=src/bifrost/src
 
-all: $(BIN) $(BIN)/xsketch $(BIN)/sketch
+all: $(BIN) $(BIN)/sketch
 
 $(BIN):
 	mkdir $@
