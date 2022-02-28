@@ -1,6 +1,7 @@
-#include "CandidateSet.hpp"
 #include "kseq.h"
+#include "bifrost/src/Kmer.hpp"
 #include "bifrost/src/KmerIterator.hpp"
+#include "bifrost/src/KmerHashTable.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -17,6 +18,27 @@ uint32_t s = 1000;
 uint64_t X = 9999999776999205UL;
 bool x = false;
 bool t = false;
+
+struct CandidateSet {
+    const size_t update(const Kmer);
+    void erase(const Kmer);
+
+    private:
+
+    KmerHashTable<uint32_t> candidates;
+    KmerHashTable<uint32_t>::iterator it;
+};
+
+const size_t CandidateSet::update(const Kmer kmer)
+{
+    it = candidates.find(kmer);
+    return it != candidates.end() ? ++(*it) : candidates.insert(kmer, 1).second;
+}
+
+void CandidateSet::erase(const Kmer kmer)
+{
+    candidates.erase(kmer);
+}
 
 void sink(uint64_t *min_hash)
 {
