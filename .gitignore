@@ -1,2 +1,7 @@
 bin
 fastx
+*.swp
+a.out
+file
+main.cpp
+src/a.out
