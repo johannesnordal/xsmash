@@ -17,12 +17,17 @@ struct Sketch
 
         file >> k >> c >> s;
 
-        min_hash = new uint64_t[s];
+        min_hash = (uint64_t*) malloc(sizeof(uint64_t) * s);
 
         for (int i = 0; i < s; i++)
         {
             file >> min_hash[i];
         }
+    }
+
+    void destroy()
+    {
+        free(min_hash);
     }
 };
 
