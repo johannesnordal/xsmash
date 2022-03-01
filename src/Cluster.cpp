@@ -37,8 +37,8 @@ struct DisjointSets
 
     ~DisjointSets()
     {
-        // free(p);
-        // free(r);
+        free(p);
+        free(r);
     }
 
     int find(int x)
@@ -82,7 +82,7 @@ struct Clusters
 
     ClusterMembersTable ctable = kh_init(vec);
 
-    Clusters(DisjointSets sets) : m_leader{new int[sets.size]}, m_size{sets.size}
+    Clusters(DisjointSets& sets) : m_leader{new int[sets.size]}, m_size{sets.size}
     {
         int ret;
         khiter_t k;
@@ -162,9 +162,7 @@ Clusters find_clusters(MinHashList& min_hash_list, HashLocator& hash_locator,
         kh_destroy(u64, mutual);
     }
 
-    Clusters clusters(sets);
-
-    return clusters;
+    return Clusters(sets);
 }
 
 HashLocator locate_hashes(MinHashList& min_hash_list)
