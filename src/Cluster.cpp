@@ -109,6 +109,20 @@ struct Clusters
         }
     }
 
+    ~Clusters()
+    {
+        for (khiter_t k = kh_begin(ctable); k != kh_end(ctable); ++k)
+        {
+            if (kh_exist(ctable, k))
+            {
+                delete kh_value(ctable, k);
+            }
+        }
+
+        kh_destroy(vec, ctable);
+        delete[] m_leader;
+    }
+
     inline int leader(int x) const { return m_leader[x]; }
     inline int size() const { return m_size; }
 
@@ -322,4 +336,15 @@ int main(int argc, char** argv)
             }
         }
     }
+
+    // Housekeeping.
+    for (khiter_t k = kh_begin(hash_locator); k != kh_end(hash_locator); ++k)
+    {
+        if (kh_exist(hash_locator, k))
+        {
+            delete kh_value(hash_locator, k);
+        }
+    }
+
+    kh_destroy(vec, hash_locator);
 }
