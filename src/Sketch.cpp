@@ -70,7 +70,8 @@ void sketch(const char* fname)
 
     CandidateSet set;
     KmerIterator it_end;
-    std::vector<uint64_t> min_hash(s);
+    std::vector<uint64_t> min_hash;
+    min_hash.reserve(s);
 
     int seq_len;
     while ((seq_len = kseq_read(seq)) >= 0)
