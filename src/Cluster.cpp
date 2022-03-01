@@ -5,6 +5,7 @@
 #include <iostream>
 #include <iterator>
 #include <vector>
+#include <getopt.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -57,7 +58,7 @@ struct DisjointSets
         int xm = find(x);
         int ym = find(y);
 
-        if (xm = ym) return;
+        if (xm == ym) return;
 
         if (r[xm] > r[ym])
         {
@@ -161,6 +162,8 @@ Clusters find_clusters(MinHashList& min_hash_list, HashLocator& hash_locator,
             // the count of mutual hashes with 'j' in the 'mutual' dictionary.
             for (auto j : *kh_value(hash_locator, k))
             {
+                // if (i == j) continue;
+
                 k = kh_get(u64, mutual, j);
 
                 if (k != kh_end(mutual))
@@ -228,18 +231,57 @@ HashLocator locate_hashes(MinHashList& min_hash_list)
     return hash_locator;
 }
 
+void print_usage(const char *name)
+{
+    static const char s[] = "\nUsage: %s [options] <file>\n\n"
+        "The input <file> should contain a list of pathnames to sketches. All\n"
+        "sketches should have been sketched using the same parameters, i.e.,\n"
+        "the same kmer size etc.\n\n"
+        "Options:\n"
+        "  -d    Path to output directory.\n"
+        "  -p    The ratio of mutual hashes two sketches have to share to be\n"
+        "        combined into the same cluster [default: ~0.99].\n"
+        "  -l    Set exact number for limit for mutual hashes, overriding -p.\n\n";
+
+    printf(s, name);
+}
+
 int main(int argc, char** argv)
 {
     if (argc == 1)
     {
+        print_usage(argv[0]);
         exit(1);
     }
 
-    uint64_t limit = 990;
+    std::string dirpath = "";
+    double ratio = 0.99;
+    uint64_t limit = 0;
+
+    int opt;
+    while ((opt = getopt(argc, argv, "d:p:l:")) != -1)
+    {
+        switch (opt)
+        {
+            case 'd':
+                dirpath = optarg;
+                if (dirpath.back() != '/')
+                {
+                    dirpath += '/';
+                }
+                break;
+            case 'p':
+                ratio = atof(optarg);
+                break;
+            case 'l':
+                limit = atoi(optarg);
+                break;
+        }
+    }
 
     SketchFilenames sketch_filenames;
     {
-        std::fstream fs(argv[1], std::ios::in);
+        std::fstream fs(argv[optind], std::ios::in);
         std::istream_iterator<std::string> start(fs), end;
         sketch_filenames.assign(start, end);
     }
@@ -250,18 +292,26 @@ int main(int argc, char** argv)
     MinHashList min_hash_list;
     min_hash_list.reserve(sketch_filenames.size());
 
-    for (auto& filename : sketch_filenames)
     {
-        Sketch sketch(filename.c_str());
-        fastx_filenames.push_back(std::move(sketch.fastx_filename));
-        min_hash_list.push_back(std::move(sketch.min_hash));
+        Sketch sketch;
+        for (auto& filename : sketch_filenames)
+        {
+            sketch = Sketch(filename.c_str());
+            fastx_filenames.push_back(std::move(sketch.fastx_filename));
+            min_hash_list.push_back(std::move(sketch.min_hash));
+        }
+
+        if (!limit)
+        {
+            limit = ((double) sketch.s) * ratio;
+        }
     }
 
     auto hash_locator = locate_hashes(min_hash_list);
     auto clusters = find_clusters(min_hash_list, hash_locator, limit);
 
     {
-        std::ofstream fs("indices");
+        std::ofstream fs(dirpath + "indices");
 
         for (int x = 0; x < min_hash_list.size(); x++)
         {
@@ -280,7 +330,7 @@ int main(int argc, char** argv)
     }
 
     {
-        std::ofstream fs("hash_locator");
+        std::ofstream fs(dirpath + "hash_locator");
 
         for (khiter_t k = kh_begin(hash_locator); k != kh_end(hash_locator); ++k)
         {
@@ -302,7 +352,7 @@ int main(int argc, char** argv)
     }
 
     {
-        std::string dirname = "atoms";
+        std::string dirname = dirpath + "atoms";
         int res = mkdir(dirname.c_str(), 0777);
 
         for (khiter_t k = kh_begin(clusters.ctable); k != kh_end(clusters.ctable); ++k)

@@ -14,6 +14,8 @@ struct Sketch
     uint32_t s;
     std::vector<uint64_t> min_hash;
 
+    Sketch() = default;
+
     Sketch(const char *fname)
     {
         std::fstream fs(fname, std::ios::in);
