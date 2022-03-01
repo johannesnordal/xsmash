@@ -40,12 +40,12 @@ void CandidateSet::erase(const Kmer kmer)
     candidates.erase(kmer);
 }
 
-void sink(uint64_t *min_hash)
+void sink(std::vector<uint64_t>& min_hash)
 {
     size_t i = 0;
     size_t j = 1;
 
-    while (j < s)
+    while (j < min_hash.size())
     {
         const size_t temp = j + 1;
         if (temp < s && min_hash[temp] > min_hash[j])
@@ -70,27 +70,25 @@ void sketch(const char* fname)
 
     CandidateSet set;
     KmerIterator it_end;
-    uint64_t min_hash[s];
+    std::vector<uint64_t> min_hash(s);
 
-    int i = 0;
     int seq_len;
     while ((seq_len = kseq_read(seq)) >= 0)
     {
         KmerIterator it(seq->seq.s);
 
-        for (; i < s && it != it_end; ++it)
+        for (; min_hash.size() < s && it != it_end; ++it)
         {
             const Kmer kmer = it->first.rep();
 
             if (c == set.update(kmer))
             {
-                min_hash[i] = kmer.hash();
-                i++;
+                min_hash.push_back(kmer.hash());
             }
         }
 
-        if (i == s)
-            std::make_heap(min_hash, min_hash + i);
+        if (min_hash.size() == s)
+            std::make_heap(min_hash.begin(), min_hash.end());
 
         for (; it != it_end; ++it)
         {
@@ -107,7 +105,7 @@ void sketch(const char* fname)
         }
     }
 
-    std::sort(min_hash, min_hash + i);
+    std::sort(min_hash.begin(), min_hash.end());
 
     ofstream file;
     file.open(std::string(fname) + ".sketch");
@@ -115,11 +113,11 @@ void sketch(const char* fname)
     file << fname << "\n";
     file << k << "\n";
     file << c << "\n";
-    file << i << "\n";
+    file << min_hash.size() << "\n";
 
-    for (int j = 0; j < i; j++)
+    for (auto hash : min_hash)
     {
-        file << min_hash[j] << "\n";
+        file << hash << "\n";
     }
 
     file.close();
