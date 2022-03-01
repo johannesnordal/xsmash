@@ -184,6 +184,7 @@ Clusters find_clusters(MinHashList& min_hash_list, HashLocator& hash_locator,
         kh_destroy(u64, mutual);
     }
 
+    // See additional comments in constructor of Clusters for more information.
     return Clusters(sets);
 }
 
@@ -256,7 +257,7 @@ int main(int argc, char** argv)
     auto clusters = find_clusters(min_hash_list, hash_locator, limit);
 
     {
-        std::ofstream fs("indicies");
+        std::ofstream fs("indices");
 
         for (int x = 0; x < min_hash_list.size(); x++)
         {
