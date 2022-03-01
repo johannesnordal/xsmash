@@ -10,13 +10,13 @@
 KHASH_MAP_INIT_INT64(vec, std::vector<uint64_t>*);
 KHASH_MAP_INIT_INT64(u64, uint64_t);
 
-using ClusterMembers = std::vector<uint64_t>*;
-using ClusterMembersTable = khash_t(vec)*;
-using FastxFilenames = std::vector<std::string>;
-using HashLocator = khash_t(vec)*;
-using MinHash = std::vector<uint64_t>;
-using MinHashList = std::vector<MinHash>;
-using SketchFilenames = std::vector<std::string>;
+using ClusterMembers        = std::vector<uint64_t>*;
+using ClusterMembersTable   = khash_t(vec)*;
+using FastxFilenames        = std::vector<std::string>;
+using HashLocator           = khash_t(vec)*;
+using MinHash               = std::vector<uint64_t>;
+using MinHashList           = std::vector<MinHash>;
+using SketchFilenames       = std::vector<std::string>;
 
 struct DisjointSets
 {
@@ -84,6 +84,12 @@ struct Clusters
 
     Clusters(DisjointSets& sets) : m_leader{new int[sets.size]}, m_size{sets.size}
     {
+        // Using union-find, we have joined all sketches that belong together
+        // into sets. In addition, we will create a dicionary that contains
+        // the parent index of a set (key) and a list of indices -- including the
+        // parent index itself -- of all its members (value). This is simply
+        // to allow for easier lookup.
+
         int ret;
         khiter_t k;
 
@@ -121,14 +127,23 @@ Clusters find_clusters(MinHashList& min_hash_list, HashLocator& hash_locator,
     int ret;
     khiter_t k;
 
+    // 'i' is the index of the sketch we are currently comparing against.
     for (int i = 0; i < min_hash_list.size(); i++)
     {
+        // Each entry in the 'mutual' dictionary will contain a sketch index j (key)
+        // and the number of mutual hashes (value) between sketches i and j.
         khash_t(u64) *mutual = kh_init(u64);
 
+        // 'hash' is the k-th hash in sketch[i]
         for (auto hash : min_hash_list[i])
         {
+            // Using 'hash' as the key to 'hash_locator' we get a list of
+            // indices where index j refers to a sketch where 'hash'
+            // also appears.
             k = kh_get(vec, hash_locator, hash);
 
+            // For each sketch[j] that shares 'hash' with sketch[i], we increment
+            // the count of mutual hashes with 'j' in the 'mutual' dictionary.
             for (auto j : *kh_value(hash_locator, k))
             {
                 k = kh_get(u64, mutual, j);
@@ -144,6 +159,13 @@ Clusters find_clusters(MinHashList& min_hash_list, HashLocator& hash_locator,
                 }
             }
         }
+
+        // By this point the 'mutual' dictionary for sketch[i] is complete
+        // and we have a list of sketches that share some number of hashes
+        // with sketch[i]. Next, we want to cluster sketches that share
+        // a number of mutual hashes greater than some number 'limit'.
+        // If the number of mutual hashes exeeds this 'limit', we will
+        // join them into a set, using union-find.
 
         for (k = kh_begin(mutual); k != kh_end(mutual); ++k)
         {
