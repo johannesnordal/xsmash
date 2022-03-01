@@ -14,10 +14,10 @@ $(BIN)/sketch: $(SRC)/Sketch.cpp $(LB)/Kmer.cpp $(LB)/KmerIterator.cpp
 	$(CC) $(CFLAGS) $(SRC)/Sketch.cpp $(LB)/Kmer.cpp $(LB)/KmerIterator.cpp \
 		-o $(BIN)/sketch $(CDEPS)
 
-$(BIN)/dist: $(SRC)/Dist.cpp $(SRC)/Utils.hpp
+$(BIN)/dist: $(SRC)/Dist.cpp $(SRC)/Sketch.hpp
 	$(CC) $(CFLAGS) $(SRC)/Dist.cpp -o $(BIN)/dist
 
-$(BIN)/cluster: $(SRC)/Cluster.cpp $(SRC)/Utils.hpp
+$(BIN)/cluster: $(SRC)/Cluster.cpp $(SRC)/Sketch.hpp
 	$(CC) $(CFLAGS) $(SRC)/Cluster.cpp -o $(BIN)/cluster
 
 clean:

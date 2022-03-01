@@ -1,4 +1,4 @@
-#include "kseq.h"
+#include "bifrost/src/kseq.h"
 #include "bifrost/src/Kmer.hpp"
 #include "bifrost/src/KmerIterator.hpp"
 #include "bifrost/src/KmerHashTable.hpp"
@@ -112,6 +112,7 @@ void sketch(const char* fname)
     ofstream file;
     file.open(std::string(fname) + ".sketch");
 
+    file << fname << "\n";
     file << k << "\n";
     file << c << "\n";
     file << i << "\n";
@@ -160,6 +161,7 @@ void xsketch(const char *fname)
     ofstream file;
     file.open(std::string(fname) + ".xsketch");
 
+    file << fname << "\n";
     file << k << "\n";
     file << c << "\n";
     file << min_hash.size() << "\n";

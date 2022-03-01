@@ -1,43 +1,30 @@
-#include "Utils.hpp"
 #include "khash.h"
-#include "kvec.h"
 
 #include <fstream>
 #include <iostream>
 #include <iterator>
 #include <vector>
+#include <sys/stat.h>
+#include <sys/types.h>
 
-// khash.h doesn't play well with std::vector<T> and needs a pointer
-// to a heap allocated std::vector<T> so it doesn't segfault, adding unnecessary
-// indirection and memory allocation. kvec.h offers a fast vector
-// implemented using macros. It creates an anonymous struct which
-// needs to be wrapped into a named struct so it can be
-// referred to elsewhere, hence the Kvector wrapper.
-struct Kvector
-{
-    kvec_t(uint64_t) vec;
-};
-
-KHASH_MAP_INIT_INT64(kvector, Kvector);
+KHASH_MAP_INIT_INT64(vec, std::vector<uint64_t>*);
 KHASH_MAP_INIT_INT64(u64, uint64_t);
 
-using ClusterHashTable = khash_t(kvector)*;
-using HashLocator = khash_t(kvector)*;
+using ClusterMembers = std::vector<uint64_t>*;
+using ClusterMembersTable = khash_t(vec)*;
+using FastxFilenames = std::vector<std::string>;
+using HashLocator = khash_t(vec)*;
 using MinHash = std::vector<uint64_t>;
 using MinHashList = std::vector<MinHash>;
-using SketchFileNames = std::vector<std::string>;
+using SketchFilenames = std::vector<std::string>;
 
-struct Clusters
+struct DisjointSets
 {
-    
-    ClusterHashTable ctable = nullptr;
     int *p;
     int *r;
     int size;
 
-    static uint64_t limit;
-
-    Clusters(int n) : size{n}
+    DisjointSets(int n) : size{n}
     {
         p = (int*) malloc(sizeof(int) * size);
         r = (int*) malloc(sizeof(int) * size);
@@ -46,6 +33,12 @@ struct Clusters
             p[i] = i;
             r[i] = 0;
         }
+    }
+
+    ~DisjointSets()
+    {
+        // free(p);
+        // free(r);
     }
 
     int find(int x)
@@ -76,95 +69,127 @@ struct Clusters
                 r[ym]++;
         }
     }
+};
 
-    void build_table()
+struct Clusters
+{
+    private:
+
+    int *m_leader;
+    int m_size;
+
+    public:
+
+    ClusterMembersTable ctable = kh_init(vec);
+
+    Clusters(DisjointSets sets) : m_leader{new int[sets.size]}, m_size{sets.size}
     {
-        if (ctable != nullptr)
-        {
-            kh_destroy(kvector, ctable);
-            ctable = kh_init(kvector);
-        }
-
         int ret;
         khiter_t k;
 
-        for (int x = 0; x < size; x++)
+        for (int x = 0; x < sets.size; x++)
         {
-            const int parent = find(x);
+            m_leader[x] = sets.find(x);
+
+            k = kh_get(vec, ctable, m_leader[x]);
 
             if (k == kh_end(ctable))
             {
-                k = kh_put(kvector, ctable, parent, &ret);
-                Kvector v;
-                kv_init(v.vec);
-                kh_value(ctable, k) = v;
+                k = kh_put(vec, ctable, m_leader[x], &ret);
+                kh_value(ctable, k) = new std::vector<uint64_t>;
             }
 
-            kv_push(uint64_t, kh_value(ctable, k).vec, x);
+            kh_value(ctable, k)->push_back(x);
         }
     }
 
-    ~Clusters()
+    inline int leader(int x) const { return m_leader[x]; }
+    inline int size() const { return m_size; }
+
+    ClusterMembers members(int x)
     {
-        free(p);
-        free(r);
-        kh_destroy(kvector, ctable);
+        khiter_t k = kh_get(vec, ctable, m_leader[x]);
+        return kh_value(ctable, k);
     }
 };
 
-HashLocator locate_hashes(MinHashList& min_hash_list)
+Clusters find_clusters(MinHashList& min_hash_list, HashLocator& hash_locator,
+        const uint64_t limit)
 {
+    DisjointSets sets(min_hash_list.size());
+
     int ret;
     khiter_t k;
-    HashLocator hash_locator = kh_init(kvector);
 
     for (int i = 0; i < min_hash_list.size(); i++)
-    {
-        for (auto hash : min_hash_list[i])
-        {
-            k = kh_get(kvector, hash_locator, hash);
-
-            if (k == kh_end(hash_locator))
-            {
-                k = kh_put(kvector, hash_locator, hash, &ret);
-                Kvector kv;
-                kv_init(kv.vec);
-                kh_value(hash_locator, k) = kv;
-            }
-
-            kv_push(uint64_t, kh_value(hash_locator, k).vec, i);
-        }
-    }
-
-    return hash_locator;
-}
-
-Clusters find_clusters(MinHashList& min_hash_list,
-                       HashLocator& hash_locator,
-                       const uint64_t limit)
-{
-    Clusters clusters(min_hash_list.size());
-
-    int ret;
-    khiter_t k;
-
-    for (uint64_t i = 0; i < min_hash_list.size(); i++)
     {
         khash_t(u64) *mutual = kh_init(u64);
 
         for (auto hash : min_hash_list[i])
         {
-            k = kh_get(kvector, hash_locator, hash);
-            Kvector indices = kh_value(hash_locator, k);
+            k = kh_get(vec, hash_locator, hash);
 
-            for (uint64_t j = 0; j < kv_size(indices.vec); j++)
+            for (auto j : *kh_value(hash_locator, k))
             {
+                k = kh_get(u64, mutual, j);
 
+                if (k != kh_end(mutual))
+                {
+                    kh_value(mutual, k) += 1;
+                }
+                else
+                {
+                    k = kh_put(u64, mutual, j, &ret);
+                    kh_value(mutual, k) = 1;
+                }
             }
+        }
+
+        for (k = kh_begin(mutual); k != kh_end(mutual); ++k)
+        {
+            if (kh_exist(mutual, k))
+            {
+                const auto j = kh_key(mutual, k);
+                const auto c = kh_value(mutual, k);
+
+                if (c > limit && sets.find(i) != sets.find(j))
+                {
+                    sets.join(i, j);
+                }
+            }
+        }
+
+        kh_destroy(u64, mutual);
+    }
+
+    Clusters clusters(sets);
+
+    return clusters;
+}
+
+HashLocator locate_hashes(MinHashList& min_hash_list)
+{
+    int ret;
+    khiter_t k;
+    HashLocator hash_locator = kh_init(vec);
+
+    for (int i = 0; i < min_hash_list.size(); i++)
+    {
+        for (auto hash : min_hash_list[i])
+        {
+            k = kh_get(vec, hash_locator, hash);
+
+            if (k == kh_end(hash_locator))
+            {
+                k = kh_put(vec, hash_locator, hash, &ret);
+                kh_value(hash_locator, k) = new std::vector<uint64_t>;
+            }
+
+            kh_value(hash_locator, k)->push_back(i);
         }
     }
 
-    return clusters;
+    return hash_locator;
 }
 
 int main(int argc, char** argv)
@@ -174,19 +199,29 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    SketchFileNames filenames;
+    uint64_t limit = 990;
+
+    SketchFilenames sketch_filenames;
     {
         std::fstream fs(argv[1], std::ios::in);
         std::istream_iterator<std::string> start(fs), end;
-        filenames.assign(start, end);
+        sketch_filenames.assign(start, end);
     }
 
-    MinHashList min_hash_list;
-    min_hash_list.reserve(filenames.size());
+    FastxFilenames fastx_filenames;
+    fastx_filenames.reserve(sketch_filenames.size());
 
-    for (auto& filename : filenames)
+    MinHashList min_hash_list;
+    min_hash_list.reserve(sketch_filenames.size());
+
+    for (auto& filename : sketch_filenames)
     {
         std::fstream fs(filename, std::ios::in);
+
+        std::string fastx_filename;
+        fs >> fastx_filename;
+        fastx_filenames.push_back(std::move(fastx_filename));
+
         std::istream_iterator<uint64_t> start(fs), end;
 
         // skip k, c, s.
@@ -197,12 +232,73 @@ int main(int argc, char** argv)
         min_hash_list.push_back({start, end});
     }
 
-    for (auto& min_hash : min_hash_list)
+    auto hash_locator = locate_hashes(min_hash_list);
+    auto clusters = find_clusters(min_hash_list, hash_locator, limit);
+
     {
-        for (auto hash : min_hash)
+        std::ofstream fs("indicies");
+
+        for (int x = 0; x < min_hash_list.size(); x++)
         {
-            std::cout << hash << "\n";
+            auto leader = clusters.leader(x);
+            if (clusters.members(leader)->size() > 1)
+            {
+                fs << x << " " << fastx_filenames[x] << " " << leader << "\n";
+            }
+            else
+            {
+                fs << x << " " << fastx_filenames[x] << " NULL\n";
+            }
         }
-        std::cout << "\n";
+
+        fs.close();
+    }
+
+    {
+        std::ofstream fs("hash_locator");
+
+        for (khiter_t k = kh_begin(hash_locator); k != kh_end(hash_locator); ++k)
+        {
+            if (kh_exist(hash_locator, k))
+            {
+                auto hash = kh_key(hash_locator, k);
+                auto indx = kh_value(hash_locator, k);
+
+                fs << hash << " ";
+                for (auto i : *indx)
+                {
+                    fs << i << " ";
+                }
+                fs << "\n";
+            }
+        }
+
+        fs.close();
+    }
+
+    {
+        std::string dirname = "atoms";
+        int res = mkdir(dirname.c_str(), 0777);
+
+        for (khiter_t k = kh_begin(clusters.ctable); k != kh_end(clusters.ctable); ++k)
+        {
+            if (kh_exist(clusters.ctable, k))
+            {
+                auto leader = kh_key(clusters.ctable, k);
+                auto members = kh_value(clusters.ctable, k);
+
+                if (members->size() > 1)
+                {
+                    std::ofstream fs(dirname + "/" + std::to_string(leader));
+
+                    for (auto x : *members)
+                    {
+                        fs << fastx_filenames[x] << "\n";
+                    }
+
+                    fs.close();
+                }
+            }
+        }
     }
 }
