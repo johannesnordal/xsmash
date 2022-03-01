@@ -1,4 +1,5 @@
 #include "khash.h"
+#include "Sketch.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -249,6 +250,7 @@ int main(int argc, char** argv)
     MinHashList min_hash_list;
     min_hash_list.reserve(sketch_filenames.size());
 
+#if 0
     for (auto& filename : sketch_filenames)
     {
         std::fstream fs(filename, std::ios::in);
@@ -266,6 +268,14 @@ int main(int argc, char** argv)
 
         min_hash_list.push_back({start, end});
     }
+#else
+    for (auto& filename : sketch_filenames)
+    {
+        Sketch sketch(filename.c_str());
+        fastx_filenames.push_back(std::move(sketch.fastx_filename));
+        min_hash_list.push_back(std::move(sketch.min_hash));
+    }
+#endif
 
     auto hash_locator = locate_hashes(min_hash_list);
     auto clusters = find_clusters(min_hash_list, hash_locator, limit);

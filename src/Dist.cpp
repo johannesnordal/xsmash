@@ -1,6 +1,8 @@
 #include "Sketch.hpp"
 #include <cmath>
 
+using MinHash = std::vector<uint64_t>;
+
 double compute_dist(double k, double jaccard)
 {
     if (jaccard == 0.0)
@@ -77,12 +79,12 @@ double compute_p_value(double shared_k, double r_value, double sketch_size)
     return 0;
 }
 
-double shared_kmers(uint64_t *m1, uint64_t *m2, uint32_t size)
+double shared_kmers(MinHash& m1, MinHash& m2)
 {
     uint32_t shared = 0;
     uint32_t unique = 0;
 
-    for (int i = 0, j = 0; unique < size && i != size && j != size; )
+    for (int i = 0, j = 0; unique < m1.size() && i != m1.size() && j != m1.size(); )
     {
         if (m1[i] == m2[j])
         {
@@ -134,7 +136,7 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    double shared_k = shared_kmers(s1.min_hash, s2.min_hash, s1.s);
+    double shared_k = shared_kmers(s1.min_hash, s2.min_hash);
     double jaccard = shared_k / (double) s1.s;
     double dist = compute_dist(s1.k, jaccard);
     double r = compute_r_value(s1.k, s1.s);
