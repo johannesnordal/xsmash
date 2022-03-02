@@ -84,13 +84,16 @@ struct Clusters
 
     ClusterMembersTable ctable = kh_init(vec);
 
-    Clusters(DisjointSets& sets) : m_leader{new int[sets.size]}, m_size{sets.size}
+    Clusters(DisjointSets& sets)
     {
         // Using union-find, we have joined all sketches that belong together
         // into sets. In addition, we will create a dicionary that contains
         // the parent index of a set (key) and a list of indices -- including the
         // parent index itself -- of all its members (value). This is simply
         // to allow for easier lookup.
+
+        m_size = sets.size;
+        m_leader = (int*) malloc(sizeof(int) * m_size);
 
         int ret;
         khiter_t k;
@@ -122,7 +125,7 @@ struct Clusters
         }
 
         kh_destroy(vec, ctable);
-        delete[] m_leader;
+        free(m_leader);
     }
 
     inline int leader(int x) const { return m_leader[x]; }
@@ -305,6 +308,8 @@ int main(int argc, char** argv)
         {
             limit = ((double) sketch.s) * ratio;
         }
+
+        std::cout << "using limit: " << limit << "\n";
     }
 
     auto hash_locator = locate_hashes(min_hash_list);

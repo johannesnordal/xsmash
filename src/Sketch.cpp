@@ -178,7 +178,7 @@ void xsketch(const char *fname)
 
 void print_usage(const char *name)
 {
-    static char const s[] = "Usage: %s [options] <in.fasta | in.fastq>\n\n"
+    static char const s[] = "Usage: %s [options] (<in.fasta> | <in.fastq>) ...\n\n"
         "Options:\n"
         "  -k    Size of kmers [default: 21].\n"
         "  -c    Candidate set limit [default: 1].\n"
