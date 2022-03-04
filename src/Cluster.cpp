@@ -159,21 +159,6 @@ struct Clusters
         khiter_t k = kh_get(vec, ctable, cluster_id[x]);
         return *kh_value(ctable, k);
     }
-
-    struct Cluster
-    {
-        uint64_t m_id;
-        std::vector<uint64_t> *m_members;
-
-        Cluster() = default;
-
-        Cluster(uint64_t id, std::vector<uint64_t> *members) :
-            m_id{id}, m_members{members}
-        {}
-
-        uint64_t id() const { return m_id; }
-        std::vector<uint64_t>& members() const { return *m_members; }
-    };
 };
 
 khash_t(vec)* locate_hashes(const std::vector<std::vector<uint64_t>>& min_hash_list)
