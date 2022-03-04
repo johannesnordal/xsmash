@@ -217,7 +217,7 @@ int main(int argc, char** argv)
                 break;
             case 'X':
                 x = true;
-                X = atoi(optarg);
+                X = atol(optarg);
                 break;
         }
     }

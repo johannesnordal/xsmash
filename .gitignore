@@ -10,3 +10,8 @@ indicies
 indices
 atoms
 *.sketch
+src/Clusters.hpp
+src/KhashVector.cpp
+src/KhashVector.hpp
+src/test.cpp
+src/test2.cpp

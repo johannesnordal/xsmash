@@ -76,7 +76,7 @@ double compute_p_value(double shared_k, double r_value, double sketch_size)
     double threshold = std::max(3, (int) compute_threshold(r_value, sketch_size));
     double p_value = approx_p(a, threshold, r_ratio, shared_k, sketch_size);
 
-    return 0;
+    return p_value;
 }
 
 double shared_kmers(MinHash& m1, MinHash& m2)
@@ -84,7 +84,7 @@ double shared_kmers(MinHash& m1, MinHash& m2)
     uint32_t shared = 0;
     uint32_t unique = 0;
 
-    for (int i = 0, j = 0; unique < m1.size() && i != m1.size() && j != m1.size(); )
+    for (size_t i = 0, j = 0; unique < m1.size() && i != m1.size() && j != m1.size(); )
     {
         if (m1[i] == m2[j])
         {
@@ -124,7 +124,7 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    if (s1.c != s1.c)
+    if (s1.c != s2.c)
     {
         std::cerr << "sketches use different thresholds (-c)\n";
         exit(1);

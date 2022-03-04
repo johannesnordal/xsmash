@@ -1,6 +1,6 @@
 CC=g++
 CDEPS=-lz
-CFLAGS=-Ofast -std=c++11
+CFLAGS=-Wall -Ofast -std=c++11
 BIN=bin
 SRC=src
 LB=src/bifrost/src
