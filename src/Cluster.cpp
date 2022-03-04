@@ -176,7 +176,7 @@ struct Clusters
     };
 };
 
-khash_t(vec)* locate_hashes(std::vector<std::vector<uint64_t>>& min_hash_list)
+khash_t(vec)* locate_hashes(const std::vector<std::vector<uint64_t>>& min_hash_list)
 {
     int ret;
     khiter_t k;
