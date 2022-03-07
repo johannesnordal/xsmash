@@ -178,13 +178,13 @@ void xsketch(const char *fname)
 
 void print_usage(const char *name)
 {
-    static char const s[] = "Usage: %s [options] (<in.fasta> | <in.fastq>) ...\n\n"
+    static char const s[] = "\nUsage: %s [options] (<in.fasta> | <in.fastq>) ...\n\n"
         "Options:\n"
         "  -k    Size of kmers [default: 21].\n"
         "  -c    Candidate set limit [default: 1].\n"
         "  -s    Size of min hash [default: 1000]. Ignored with -x and -X options.\n"
         "  -x    Include all hashes that have a value lower than 9999999776999205UL.\n"
-        "  -X    Include all hashes that have a value lower than X.\n";
+        "  -X    Include all hashes that have a value lower than X.\n\n";
     printf(s, name);
 }
 
