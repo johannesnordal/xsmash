@@ -15,3 +15,5 @@ src/KhashVector.cpp
 src/KhashVector.hpp
 src/test.cpp
 src/test2.cpp
+genomes.txt
+sketches.txt

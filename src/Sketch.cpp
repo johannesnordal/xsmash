@@ -17,7 +17,15 @@ uint32_t c = 1;
 uint32_t s = 1000;
 uint64_t X = 9999999776999205UL;
 bool x = false;
-bool t = false;
+std::string dirpath = "";
+
+std::string get_filename_from_path(std::string path)
+{
+    const size_t last_slash_index = path.find_last_of("\\/");
+    if (std::string::npos != last_slash_index)
+        path.erase(0, last_slash_index + 1);
+    return path;
+}
 
 struct CandidateSet {
     const size_t update(const Kmer);
@@ -109,7 +117,7 @@ void sketch(const char* fname)
     std::sort(min_hash.begin(), min_hash.end());
 
     ofstream file;
-    file.open(std::string(fname) + ".sketch");
+    file.open(dirpath + get_filename_from_path(fname) + ".sketch");
 
     file << fname << "\n";
     file << k << "\n";
@@ -158,7 +166,7 @@ void xsketch(const char *fname)
     std::sort(min_hash.begin(), min_hash.end());
 
     ofstream file;
-    file.open(std::string(fname) + ".xsketch");
+    file.open(dirpath + get_filename_from_path(fname)  + ".xsketch");
 
     file << fname << "\n";
     file << k << "\n";
@@ -196,11 +204,21 @@ int main(int argc, char** argv)
         exit(1);
     }
 
+    std::string batch_file = "";
+
     int opt;
-    while ((opt = getopt(argc, argv, "k:c:s:xt")) != -1)
+    while ((opt = getopt(argc, argv, "d:f:k:c:s:x")) != -1)
     {
         switch (opt)
         {
+            case 'd':
+                dirpath = optarg;
+                if (dirpath.back() != '/')
+                    dirpath += '/';
+                break;
+            case 'f':
+                batch_file = optarg;
+                break;
             case 'k':
                 k = atoi(optarg);
                 break;
@@ -210,8 +228,6 @@ int main(int argc, char** argv)
             case 's':
                 s = atoi(optarg);
                 break;
-            case 't':
-                t = true;
             case 'x':
                 x = true;
                 break;
@@ -226,13 +242,35 @@ int main(int argc, char** argv)
 
     if (!x)
     {
-        for (; optind < argc; optind++)
-            sketch(argv[optind]);
+        if (batch_file == "")
+        {
+            for (; optind < argc; optind++)
+                sketch(argv[optind]);
+        }
+        else
+        {
+            std::fstream fs(batch_file, std::ios::in);
+            std::string filename;
+            while (std::getline(fs, filename))
+                sketch(filename.c_str());
+            fs.close();
+        }
     }
     else
     {
-        for (; optind < argc; optind++)
-            xsketch(argv[optind]);
+        if (batch_file == "")
+        {
+            for (; optind < argc; optind++)
+                xsketch(argv[optind]);
+        }
+        else
+        {
+            std::fstream fs(batch_file, std::ios::in);
+            std::string filename;
+            while (std::getline(fs, filename))
+                sketch(filename.c_str());
+            fs.close();
+        }
     }
 
     return 0;
