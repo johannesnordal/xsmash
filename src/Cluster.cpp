@@ -11,8 +11,6 @@
 KHASH_MAP_INIT_INT64(vec, std::vector<uint64_t>*);
 KHASH_MAP_INIT_INT64(u64, uint64_t);
 
-using MinHashList = std::vector<std::vector<std::uint64_t>>;
-
 struct Clusters
 {
     private:
@@ -49,8 +47,8 @@ struct Clusters
         }
     }
 
-    void find_clusters(const MinHashList& min_hash_list, khash_t(vec) *hash_locator,
-            std::uint64_t limit)
+    void find_clusters(const std::vector<std::vector<uint64_t>>& min_hash_list,
+            khash_t(vec) *hash_locator, std::uint64_t limit)
     {
         int ret;
         khiter_t k;
@@ -145,7 +143,7 @@ struct Clusters
     }
 };
 
-khash_t(vec) *locate_hashes(const MinHashList& min_hash_list)
+khash_t(vec) *locate_hashes(const std::vector<std::vector<uint64_t>>& min_hash_list)
 {
     int ret;
     khiter_t k;
