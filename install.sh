@@ -16,8 +16,7 @@ add_to_path () {
 
 FILE="$HOME/.bashrc"
 
-git submodule init
-git submodule update
+git clone https://github.com/pmelsted/bifrost.git
 
 XSMASH_PATH=$(pwd)
 add_to_path "C_INCLUDE_PATH" "$XSMASH_PATH/include/" "$FILE"
@@ -36,4 +35,5 @@ make
 make install
 
 cd $XSMASH_PATH
+rm -rf bifrost
 make

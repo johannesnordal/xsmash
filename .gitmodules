@@ -1,8 +1,0 @@
-<<<<<<< HEAD
-[submodule "bifrost"]
-	path = bifrost
-=======
-[submodule "src/bifrost"]
-	path = src/bifrost
->>>>>>> parent of ceed7a6... remove: bifrost submodule
-	url = https://github.com/pmelsted/bifrost.git
