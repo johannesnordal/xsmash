@@ -25,3 +25,5 @@ genomes_1.txt
 genomes_2.txt
 sketches_1.txt
 sketches_2.txt
+include/
+lib/
