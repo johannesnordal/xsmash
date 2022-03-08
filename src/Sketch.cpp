@@ -1,7 +1,7 @@
-#include "bifrost/src/kseq.h"
-#include "bifrost/src/Kmer.hpp"
-#include "bifrost/src/KmerIterator.hpp"
-#include "bifrost/src/KmerHashTable.hpp"
+#include "../include/bifrost/kseq.h"
+#include "../include/bifrost/Kmer.hpp"
+#include "../include/bifrost/KmerIterator.hpp"
+#include "../include/bifrost/KmerHashTable.hpp"
 
 #include <fstream>
 #include <iostream>
