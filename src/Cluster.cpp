@@ -249,17 +249,23 @@ int main(int argc, char** argv)
     }
     fs.close();
 
+    uint64_t max_hash = 0;
     fs = std::ofstream(dirpath + "hash_locator");
     for (khiter_t k = kh_begin(hash_locator); k != kh_end(hash_locator); ++k)
     {
         if (kh_exist(hash_locator, k))
         {
+            max_hash = std::max(kh_key(hash_locator, k), max_hash);
             fs << kh_key(hash_locator, k) << ' ';
             for (auto i : *kh_value(hash_locator, k))
                 fs << i << ' ';
             fs << '\n';
         }
     }
+    fs.close();
+
+    fs = std::ofstream(dirpath + "max_hash");
+    fs << max_hash << '\n';
     fs.close();
 
     std::string dirname = dirpath + "atoms";
