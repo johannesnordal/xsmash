@@ -1,8 +1,8 @@
 CC=g++
 CFLAGS=-Wall -Ofast -std=c++11
-BIN=bin
+BIN=local/bin
 SRC=src
-CDEPS=lib/libbifrost.a -lz -pthread
+CDEPS=local/lib/libbifrost.a -lz -pthread
 
 all: $(BIN) $(BIN)/sketch $(BIN)/dist $(BIN)/cluster
 
