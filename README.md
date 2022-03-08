@@ -6,9 +6,9 @@
 # Installation
 
 ```
-git clone --recurse-submodules https://github.com/johannesnordal/xsmash.git
+git clone https://github.com/johannesnordal/xsmash.git
 cd xsmash
-make
+./install.sh
 ```
 
 # Usage
@@ -16,13 +16,13 @@ make
 Assuming we are in the `xsmash` directory, running
 
 ```
-bin/sketch
+local/bin/sketch
 ```
 
 displays the command line interface:
 
 ```
-Usage: bin/sketch [options] <in.fasta | in.fastq>
+Usage: local/bin/sketch [options] <in.fasta | in.fastq>
 
 Options:
   -k    Size of kmers [default: 21].
