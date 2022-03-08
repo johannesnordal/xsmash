@@ -3,7 +3,6 @@
 
 #include <fstream>
 #include <iostream>
-#include <unordered_map>
 #include <vector>
 #include <getopt.h>
 #include <sys/stat.h>
