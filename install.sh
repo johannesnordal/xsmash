@@ -16,6 +16,8 @@ add_to_path () {
 
 FILE="$HOME/.bashrc"
 
+rm -rf local
+
 git clone https://github.com/pmelsted/bifrost.git
 
 XSMASH_PATH=$(pwd)
