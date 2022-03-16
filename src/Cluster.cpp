@@ -52,13 +52,15 @@ struct Clusters
     {
         int ret;
         khiter_t k;
-        std::uint64_t *cluster_rank = (std::uint64_t*) calloc(n, sizeof(std::uint64_t));
+        std::uint64_t *cluster_rank =
+            (std::uint64_t*) calloc(n, sizeof(std::uint64_t));
         for (std::uint64_t i = 0; i < min_hash_list.size(); i++)
         {
             khash_t(u64) *mutual = kh_init(u64);
             for (auto hash : min_hash_list[i])
             {
-                for (auto j : *kh_value(hash_locator, kh_get(vec, hash_locator, hash)))
+                for (auto j : *kh_value(hash_locator,
+                            kh_get(vec, hash_locator, hash)))
                 {
                     k = kh_get(u64, mutual, j);
                     if (k != kh_end(mutual))
@@ -174,7 +176,8 @@ void print_usage(const char *name)
         "  -d    Path to output directory.\n"
         "  -p    The ratio of mutual hashes two sketches have to share to be\n"
         "        combined into the same cluster [default: ~0.99].\n"
-        "  -l    Set exact number for limit for mutual hashes, overriding -p.\n\n";
+        "  -l    Set exact number for limit for mutual hashes, overriding -p."
+        "\n\n";
     printf(s, name);
 }
 
@@ -270,7 +273,8 @@ int main(int argc, char** argv)
 
     std::string dirname = dirpath + "atoms";
     mkdir(dirname.c_str(), 0777);
-    for (khiter_t k = kh_begin(clusters.ctable); k != kh_end(clusters.ctable); ++k)
+    for (khiter_t k = kh_begin(clusters.ctable); k != kh_end(clusters.ctable);
+            ++k)
     {
         if (kh_exist(clusters.ctable, k))
         {

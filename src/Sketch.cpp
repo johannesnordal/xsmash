@@ -1,3 +1,5 @@
+#include "Sketch.hpp"
+
 #include "../local/include/bifrost/kseq.h"
 #include "../local/include/bifrost/Kmer.hpp"
 #include "../local/include/bifrost/KmerIterator.hpp"
@@ -11,21 +13,6 @@
 #include <getopt.h>
 
 KSEQ_INIT(gzFile, gzread);
-
-uint32_t k = 21;
-uint32_t c = 1;
-uint32_t s = 1000;
-uint64_t X = 9999999776999205UL;
-bool x = false;
-std::string dirpath = "";
-
-std::string get_filename_from_path(std::string path)
-{
-    const size_t last_slash_index = path.find_last_of("\\/");
-    if (std::string::npos != last_slash_index)
-        path.erase(0, last_slash_index + 1);
-    return path;
-}
 
 struct CandidateSet {
     const size_t update(const Kmer);
@@ -48,7 +35,7 @@ void CandidateSet::erase(const Kmer kmer)
     candidates.erase(kmer);
 }
 
-void sink(std::vector<uint64_t>& min_hash)
+void Sketch::sink()
 {
     size_t i = 0;
     size_t j = 1;
@@ -71,14 +58,13 @@ void sink(std::vector<uint64_t>& min_hash)
     }
 }
 
-void sketch(const char* fname)
+void Sketch::sketch()
 {
-    gzFile fp = gzopen(fname, "r");
+    gzFile fp = gzopen(fastx_filename.c_str(), "r");
     kseq_t *seq = kseq_init(fp);
 
     CandidateSet set;
     KmerIterator it_end;
-    std::vector<uint64_t> min_hash;
     min_hash.reserve(s);
 
     int seq_len;
@@ -108,7 +94,7 @@ void sketch(const char* fname)
                 if (c == set.update(kmer))
                 {
                     min_hash[0] = kmer.hash();
-                    sink(min_hash);
+                    sink();
                 }
             }
         }
@@ -116,33 +102,17 @@ void sketch(const char* fname)
 
     std::sort(min_hash.begin(), min_hash.end());
 
-    ofstream file;
-    file.open(dirpath + get_filename_from_path(fname) + ".sketch");
-
-    file << fname << "\n";
-    file << k << "\n";
-    file << c << "\n";
-    file << min_hash.size() << "\n";
-
-    for (auto hash : min_hash)
-    {
-        file << hash << "\n";
-    }
-
-    file.close();
-
     kseq_destroy(seq);
     gzclose(fp);
 }
 
-void xsketch(const char *fname)
+void Sketch::xsketch()
 {
-    gzFile fp = gzopen(fname, "r");
+    gzFile fp = gzopen(fastx_filename.c_str(), "r");
     kseq_t *seq = kseq_init(fp);
 
     CandidateSet set;
     KmerIterator it_end;
-    std::vector<uint64_t> min_hash;
 
     int seq_len;
     while ((seq_len = kseq_read(seq)) >= 0)
@@ -153,7 +123,7 @@ void xsketch(const char *fname)
         {
             const Kmer kmer = it->first.rep();
 
-            if (kmer.hash() < X)
+            if (kmer.hash() < max_hash)
             {
                 if (c == set.update(kmer))
                 {
@@ -165,33 +135,21 @@ void xsketch(const char *fname)
 
     std::sort(min_hash.begin(), min_hash.end());
 
-    ofstream file;
-    file.open(dirpath + get_filename_from_path(fname)  + ".xsketch");
-
-    file << fname << "\n";
-    file << k << "\n";
-    file << c << "\n";
-    file << min_hash.size() << "\n";
-
-    for (auto x : min_hash)
-    {
-        file << x << "\n";
-    }
-
-    file.close();
-
     kseq_destroy(seq);
     gzclose(fp);
 }
 
 void print_usage(const char *name)
 {
-    static char const s[] = "\nUsage: %s [options] (<in.fasta> | <in.fastq>) ...\n\n"
+    static char const s[] =
+        "\nUsage: %s [options] (<in.fasta> | <in.fastq>) ...\n\n"
         "Options:\n"
         "  -k    Size of kmers [default: 21].\n"
         "  -c    Candidate set limit [default: 1].\n"
-        "  -s    Size of min hash [default: 1000]. Ignored with -x and -X options.\n"
-        "  -x    Include all hashes that have a value lower than 9999999776999205UL.\n"
+        "  -s    Size of min hash [default: 1000]. Ignored with -x and"
+            "-X options.\n"
+        "  -x    Include all hashes that have a value lower than"
+            "9999999776999205UL.\n"
         "  -X    Include all hashes that have a value lower than X.\n\n";
     printf(s, name);
 }
@@ -204,10 +162,12 @@ int main(int argc, char** argv)
         exit(1);
     }
 
+    SketchOpt sketch_opt;
+    std::string dirpath = "";
     std::string batch_file = "";
 
     int opt;
-    while ((opt = getopt(argc, argv, "d:f:k:c:s:x")) != -1)
+    while ((opt = getopt(argc, argv, "d:f:k:c:s:x:")) != -1)
     {
         switch (opt)
         {
@@ -220,57 +180,34 @@ int main(int argc, char** argv)
                 batch_file = optarg;
                 break;
             case 'k':
-                k = atoi(optarg);
+                sketch_opt.k = atoi(optarg);
                 break;
             case 'c':
-                c = atoi(optarg);
+                sketch_opt.c = atoi(optarg);
                 break;
             case 's':
-                s = atoi(optarg);
+                sketch_opt.s = atoi(optarg);
                 break;
             case 'x':
-                x = true;
-                break;
-            case 'X':
-                x = true;
-                X = atol(optarg);
+                sketch_opt.max_hash = atol(optarg);
                 break;
         }
     }
 
-    Kmer::set_k(k);
+    Kmer::set_k(sketch_opt.k);
 
-    if (!x)
+    if (batch_file == "")
     {
-        if (batch_file == "")
-        {
-            for (; optind < argc; optind++)
-                sketch(argv[optind]);
-        }
-        else
-        {
-            std::fstream fs(batch_file, std::ios::in);
-            std::string filename;
-            while (std::getline(fs, filename))
-                sketch(filename.c_str());
-            fs.close();
-        }
+        for (; optind < argc; optind++)
+            Sketch(sketch_opt, argv[optind]).write(dirpath);
     }
     else
     {
-        if (batch_file == "")
-        {
-            for (; optind < argc; optind++)
-                xsketch(argv[optind]);
-        }
-        else
-        {
-            std::fstream fs(batch_file, std::ios::in);
-            std::string filename;
-            while (std::getline(fs, filename))
-                sketch(filename.c_str());
-            fs.close();
-        }
+        std::fstream fs(batch_file, std::ios::in);
+        std::string filename;
+        while (std::getline(fs, filename))
+            Sketch(sketch_opt, filename.c_str()).write(dirpath);
+        fs.close();
     }
 
     return 0;
