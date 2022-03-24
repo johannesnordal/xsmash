@@ -115,8 +115,8 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    Sketch s1(argv[1]);
-    Sketch s2(argv[2]);
+    Sketch s1 = Sketch::read(argv[1]);
+    Sketch s2 = Sketch::read(argv[2]);
 
     if (s1.k != s2.k)
     {

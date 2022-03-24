@@ -14,5 +14,6 @@
 #define PORT 3000
 #define BACKLOG 10
 #define MAX 128
+#define exit_err(msg) do { perror(msg); exit(EXIT_FAILURE); } while (0)
 
 #endif

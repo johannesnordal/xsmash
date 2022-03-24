@@ -229,7 +229,7 @@ int main(int argc, char** argv)
         Sketch sketch;
         for (auto& filename : sketch_filenames)
         {
-            sketch = Sketch(filename.c_str());
+            sketch = Sketch::read(filename.c_str());
             fastx_filenames.push_back(std::move(sketch.fastx_filename));
             min_hash_list.push_back(std::move(sketch.min_hash));
         }

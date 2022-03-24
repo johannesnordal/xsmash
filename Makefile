@@ -4,20 +4,24 @@ BIN=local/bin
 SRC=src
 CDEPS=local/lib/libbifrost.a -lz -pthread
 
-all: $(BIN) $(BIN)/sketch $(BIN)/dist $(BIN)/cluster $(BIN)/triangulate
+all: $(BIN) $(BIN)/sketch $(BIN)/dist $(BIN)/cluster $(BIN)/mince_server \
+	$(BIN)/mince_client
 
-$(BIN)/sketch: $(SRC)/Sketch.cpp
+$(BIN)/sketch: $(SRC)/Sketch.cpp $(SRC)/Sketch.hpp
 	$(CC) $(CFLAGS) $(SRC)/Sketch.cpp -o $(BIN)/sketch $(CDEPS)
 
 $(BIN)/dist: $(SRC)/Dist.cpp $(SRC)/Sketch.hpp
-	$(CC) $(CFLAGS) $(SRC)/Dist.cpp -o $(BIN)/dist
+	$(CC) $(CFLAGS) $(SRC)/Dist.cpp -o $(BIN)/dist $(CDEPS)
 
 $(BIN)/cluster: $(SRC)/Cluster.cpp $(SRC)/Sketch.hpp
-	$(CC) $(CFLAGS) $(SRC)/Cluster.cpp -o $(BIN)/cluster
+	$(CC) $(CFLAGS) $(SRC)/Cluster.cpp -o $(BIN)/cluster $(CDEPS)
 
-$(BIN)/triangulate: $(SRC)/Triangulate.cpp
-	$(CC) $(CFLAGS) $(SRC)/Triangulate.cpp -o $(BIN)/triangulate
+$(BIN)/mince_server: $(SRC)/MinceServer.cpp $(SRC)/Triangulate.hpp
+	$(CC) $(CFLAGS) $(SRC)/MinceServer.cpp -o $(BIN)/mince_server
 
+$(BIN)/mince_client: $(SRC)/MinceClient.cpp $(SRC)/Sketch.hpp $(SRC)/Triangulate.hpp
+	$(CC) $(CFLAGS) $(SRC)/MinceClient.cpp -o $(BIN)/mince_client $(CDEPS)
 clean:
-	rm -rf $(BIN)/sketch
+	rm -rf $(BIN)/sketch $(BIN)/cluster $(BIN)/dist $(BIN)/mince_server \
+		$(BIN)/mince_client
 	rm -f *.sketch fastx/*.xsketch fastx/*.msh fastx/*.sketch
