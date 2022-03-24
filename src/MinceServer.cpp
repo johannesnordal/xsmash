@@ -1,5 +1,5 @@
 #include "Triangulate.hpp"
-#include "common.h"
+#include "ServerCommon.hpp"
 
 void process(HashLocator hash_locator, Indices indices, int connfd)
 {
@@ -11,7 +11,7 @@ void process(HashLocator hash_locator, Indices indices, int connfd)
     if (read(connfd, min_hash, sizeof(uint64_t) * size) == -1)
         exit_err("process: read");
 
-    Results res[5];
+    Results res[RES_SIZE];
     memset(&res, 0, sizeof(res));
     get_results(res, hash_locator, indices, min_hash, size);
     if (write(connfd, res, sizeof(res)) == -1)
@@ -37,17 +37,19 @@ int main(int argc, char **argv)
     if (bind(sockfd, (struct sockaddr*) &servaddr, sizeof(servaddr)) != 0)
         exit_err("bind");
 
-    if (listen(sockfd, 5) != 0)
+    if (listen(sockfd, BACKLOG) != 0)
         exit_err("listen");
 
     while (true)
     {
         struct sockaddr_in cli;
         int len = sizeof(cli);
-        int connfd = accept(sockfd, (struct sockaddr*) &servaddr, (socklen_t*) &len);
+        int connfd = accept(sockfd, (struct sockaddr*) &servaddr,
+                (socklen_t*) &len);
         if (connfd < 0)
             exit_err("accept");
         process(hash_locator, indices, connfd);
+        close(connfd);
     }
 
     close(sockfd);

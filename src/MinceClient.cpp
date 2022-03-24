@@ -1,6 +1,6 @@
 #include "Sketch.hpp"
 #include "Triangulate.hpp"
-#include "common.h"
+#include "ServerCommon.hpp"
 
 void process(Sketch& sketch, int sockfd)
 {
@@ -11,11 +11,11 @@ void process(Sketch& sketch, int sockfd)
     if (write(sockfd, sketch.min_hash.data(), sizeof(uint64_t) * size) == -1)
         exit_err("write");
 
-    Results res[5];
+    Results res[RES_SIZE];
     if (read(sockfd, res, sizeof(res)) == -1)
         exit_err("read");
 
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < RES_SIZE; ++i)
     {
         if (res[i].genome[0] != '\0')
         {

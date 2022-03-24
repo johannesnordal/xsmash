@@ -78,6 +78,7 @@ struct Sketch
         fs >> _sketch.k >> _sketch.c >> _sketch.s;
         std::istream_iterator<uint64_t> start(fs), end;
         _sketch.min_hash.assign(start, end);
+        fs.close();
         return _sketch;
     }
 

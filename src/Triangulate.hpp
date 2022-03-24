@@ -1,6 +1,7 @@
 #ifndef TRIANGULATE_HPP
 #define TRIANGULATE_HPP
 #include "khash.h"
+#include "ServerCommon.hpp"
 
 #include <algorithm>
 #include <cstdio>
@@ -62,8 +63,7 @@ Indices read_indices(const char *indices_filename)
     return indices;
 }
 
-Mutual find_mutual(HashLocator hash_locator, uint64_t *min_hash,
-        size_t n)
+Mutual find_mutual(HashLocator hash_locator, uint64_t *min_hash, size_t n)
 {
     int ret;
     khiter_t k;
@@ -115,12 +115,12 @@ struct Results
     char genome[1024];
 };
 
-void get_results(Results res[5], HashLocator hash_locator, Indices& indices,
-        uint64_t *min_hash, size_t size)
+void get_results(Results res[RES_SIZE], HashLocator hash_locator,
+        Indices& indices, uint64_t *min_hash, size_t min_hash_size)
 {
-    auto mutual = find_mutual(hash_locator, min_hash, size);
+    auto mutual = find_mutual(hash_locator, min_hash, min_hash_size);
 
-    for (int i = 0; i < 5 && i < mutual.size(); ++i)
+    for (size_t i = 0; i < RES_SIZE && i < mutual.size(); ++i)
     {
         res[i].id = mutual[i].first;
         res[i].mutual = mutual[i].second;
